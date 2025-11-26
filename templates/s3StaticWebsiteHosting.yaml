@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  Creates a publicly accessible S3 bucket for Static Website Hosting.
+  NOTE: The bucket and its content will be publicly readable.
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: A globally unique name for the S3 bucket.
+    MinLength: 3
+
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+        
+      Tags:
+        - Key: Name
+          Value: !Sub "${BucketName}-Website"
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Join
+              - ""
+              - - "arn:aws:s3:::"
+                - !Ref WebsiteBucket
+                - "/*"
+
+Outputs:
+  WebsiteURL:
+    Description: The URL for the hosted static website.
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+  BucketName:
+    Description: The name of the created bucket.
+    Value: !Ref BucketName
