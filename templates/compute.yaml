@@ -1,0 +1,25 @@
+Parameters:
+  KeyName:
+    Type: String
+    Description: Name of SSH Key
+
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1 
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp3
+            DeleteOnTermination: true
+      AvailabilityZone: eu-central-1a
+      ImageId: ami-0a6793a25df710b06
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !ImportValue WebServer-SG-ID
+      Tags:
+        - Key: Name
+          Value: MyServerFromCode
+
