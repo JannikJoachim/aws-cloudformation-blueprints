@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deployment of a Windows Server 2025 EC2 host for RDP access.
+
+Parameters:
+  KeyName:
+    Type: String
+    Description: The name of an existing AWS Key Pair for administrator password decryption.
+  ClientRdpCidrIp:
+    Type: String
+    Description: The public IP address of the client machine allowed to connect via RDP
+    AllowedPattern: "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/([0-9]|[1-2][0-9]|3[0-2]))?$"
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: Type of the EC2 instance.
+    AllowedValues: [t2.micro, t3.micro, t2.small, t3.small]
+
+Mappings:
+  RegionMap:
+    us-west-2:
+      WindowsAMI: ami-0c70d556495b25a90
+
+Resources:
+  RDPSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows RDP access ONLY from the specified ClientRdpCidrIp parameter
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: !Ref ClientRdpCidrIp
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-RDP-SG"
+
+  WindowsInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", WindowsAMI]
+      SecurityGroupIds:
+        - !Ref RDPSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-Windows-Server"
+
+Outputs:
+  InstanceId:
+    Description: ID of the created EC2 instance.
+    Value: !Ref WindowsInstance
+  PublicIP:
+    Description: Public IP address required to establish the RDP connection.
+    Value: !GetAtt WindowsInstance.PublicIp
